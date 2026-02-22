@@ -2,8 +2,13 @@ import java.util.*;
 
 public class HostelFeeCalculator {
     private final FakeBookingRepo repo;
-
-    public HostelFeeCalculator(FakeBookingRepo repo) { this.repo = repo; }
+    private final List<RoomPricing> roomPricings;
+    private final List<AddOnPricing> addOnPricings;
+    public HostelFeeCalculator(FakeBookingRepo repo, List<RoomPricing> roomPricings, List<AddOnPricing> addOnPricings) {
+        this.repo = repo;
+        this.roomPricings = roomPricings;
+        this.addOnPricings = addOnPricings;
+    }
 
     // OCP violation: switch + add-on branching + printing + persistence.
     public void process(BookingRequest req) {
@@ -17,21 +22,33 @@ public class HostelFeeCalculator {
     }
 
     private Money calculateMonthly(BookingRequest req) {
-        double base;
-        switch (req.roomType) {
-            case LegacyRoomTypes.SINGLE -> base = 14000.0;
-            case LegacyRoomTypes.DOUBLE -> base = 15000.0;
-            case LegacyRoomTypes.TRIPLE -> base = 12000.0;
-            default -> base = 16000.0;
+        double base = 0.0;
+        // switch (req.roomType) {
+        //     case LegacyRoomTypes.SINGLE -> base = 14000.0;
+        //     case LegacyRoomTypes.DOUBLE -> base = 15000.0;
+        //     case LegacyRoomTypes.TRIPLE -> base = 12000.0;
+        //     default -> base = 16000.0;
+        // }
+        for (RoomPricing rp : roomPricings) {
+            if (rp.supports(req.roomType)) {
+                base = rp.basePrice();
+                break;
+            }
         }
-
         double add = 0.0;
+        // for (AddOn a : req.addOns) {
+        //     if (a == AddOn.MESS) add += 1000.0;
+        //     else if (a == AddOn.LAUNDRY) add += 500.0;
+        //     else if (a == AddOn.GYM) add += 300.0;
+        // }
         for (AddOn a : req.addOns) {
-            if (a == AddOn.MESS) add += 1000.0;
-            else if (a == AddOn.LAUNDRY) add += 500.0;
-            else if (a == AddOn.GYM) add += 300.0;
+            for (AddOnPricing ap : addOnPricings) {
+                if (ap.supports(a)) {
+                    add += ap.price();
+                    break;
+                }
+            }
         }
-
         return new Money(base + add);
     }
 }

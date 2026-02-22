@@ -2,6 +2,12 @@ import java.util.*;
 
 public class EligibilityEngine {
     private final FakeEligibilityStore store;
+    private final List<EligibilityRule> rules = List.of(
+            new DisciplinaryRule(),
+            new CgrRule(),
+            new AttendanceRule(),
+            new CreditsRule()
+    );
 
     public EligibilityEngine(FakeEligibilityStore store) { this.store = store; }
 
@@ -17,18 +23,25 @@ public class EligibilityEngine {
         String status = "ELIGIBLE";
 
         // OCP violation: long chain for each rule
-        if (s.disciplinaryFlag != LegacyFlags.NONE) {
-            status = "NOT_ELIGIBLE";
-            reasons.add("disciplinary flag present");
-        } else if (s.cgr < 8.0) {
-            status = "NOT_ELIGIBLE";
-            reasons.add("CGR below 8.0");
-        } else if (s.attendancePct < 75) {
-            status = "NOT_ELIGIBLE";
-            reasons.add("attendance below 75");
-        } else if (s.earnedCredits < 20) {
-            status = "NOT_ELIGIBLE";
-            reasons.add("credits below 20");
+        // if (s.disciplinaryFlag != LegacyFlags.NONE) {
+        //     status = "NOT_ELIGIBLE";
+        //     reasons.add("disciplinary flag present");
+        // } else if (s.cgr < 8.0) {
+        //     status = "NOT_ELIGIBLE";
+        //     reasons.add("CGR below 8.0");
+        // } else if (s.attendancePct < 75) {
+        //     status = "NOT_ELIGIBLE";
+        //     reasons.add("attendance below 75");
+        // } else if (s.earnedCredits < 20) {
+        //     status = "NOT_ELIGIBLE";
+        //     reasons.add("credits below 20");
+        // }
+        for (EligibilityRule rule : rules) {
+            if (rule.fails(s)) {
+                status = "NOT_ELIGIBLE";
+                reasons.add(rule.reason());
+                break;
+            }
         }
 
         return new EligibilityEngineResult(status, reasons);
